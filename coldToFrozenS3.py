@@ -10,7 +10,7 @@ import subprocess
 from logging.handlers import RotatingFileHandler
 
 #Define Archive Directory
-ARCHIVE_DIR = '/home/splunk/splunkCold/frozenData'
+ARCHIVE_DIR = '/data/splunkWarm/frozenData'
 
 #Define Host Name
 hostname=os.uname()[1]
@@ -19,7 +19,7 @@ class ColdToFrozenS3Error(Exception):
     pass
 
 #Set up logging
-log_file_path = '/home/splunk/splunkArchive.log'
+log_file_path = '/opt/splunk/var/log/splunk/splunkArchive.log'
 app_name = 'SplunkArchive'
 def get_module_logger(app_name,file_path):
         logger = logging.getLogger(app_name)
@@ -37,7 +37,7 @@ one_month_earlier=today-120*86400
 
 #Start Logger
 logger = get_module_logger(app_name='SplunkArchive',file_path=log_file_path)
-logger.info('Started on '+str(datetime.datetime.today()))
+#logger.info('Started on '+str(datetime.datetime.today()))
 #logger.info("TEST")
 
 def handleNewBucket(base, files):
@@ -92,7 +92,6 @@ if __name__ == "__main__":
     destdir = os.path.join(ARCHIVE_DIR, indexname, os.path.basename(bucket))
     container_name = indexname
     full_index_path=os.path.join(ARCHIVE_DIR,indexname)
-    logger.info('full_index_path'+full_index_path)
 
     s3bucket = 'splunkarchive'
     instance_id = urllib.request.urlopen('http://169.254.169.254/latest/meta-data/instance-id').read().decode()
@@ -101,15 +100,11 @@ if __name__ == "__main__":
         s3bucket=s3bucket,
         instanceid=instance_id,
         index=indexname) 
-    logger.info('instanceid'+instance_id)
-
+    
     for bucket_dir in os.listdir(full_index_path):
         bucket_path=os.path.join(full_index_path,bucket_dir)
-        logger.info('bucket_path:'+bucket_path)
         if os.path.isdir(bucket_path):
-            logger.info('Working on the bucket '+bucket_path)
             output_filename=full_index_path+'/'+hostname+'_'+indexname+'_'+bucket_dir+'.tar.gz'
-            logger.info('output_filename'+output_filename)
             make_index_bucket_tarfile(output_filename,bucket_path)
 
     for files in os.listdir(full_index_path):
@@ -132,6 +127,8 @@ if __name__ == "__main__":
                             raise ColdToFrozenS3Error("S3 upload timedout and was killed")
                         except:
                             raise ColdToFrozenS3Error("Failed executing AWS CLI")
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
                         print('Froze {0} OK'.format(sys.argv[1]))
     while os.path.isdir(destdir):
         print('Warning: This bucket already exists in the archive directory')
