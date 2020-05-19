@@ -100,7 +100,14 @@ if __name__ == "__main__":
         s3bucket=s3bucket,
         instanceid=instance_id,
         index=indexname) 
-    
+
+    while os.path.isdir(destdir):
+        print('Warning: This bucket already exists in the archive directory')
+        print('Adding a random extension to this directory...')
+        destdir += '.' + str(random.randrange(10))
+
+    shutil.copytree(bucket, destdir)
+
     for bucket_dir in os.listdir(full_index_path):
         bucket_path=os.path.join(full_index_path,bucket_dir)
         if os.path.isdir(bucket_path):
@@ -130,9 +137,3 @@ if __name__ == "__main__":
                         if os.path.isfile(file_path):
                             os.remove(file_path)
                         print('Froze {0} OK'.format(sys.argv[1]))
-    while os.path.isdir(destdir):
-        print('Warning: This bucket already exists in the archive directory')
-        print('Adding a random extension to this directory...')
-        destdir += '.' + str(random.randrange(10))
-
-    shutil.copytree(bucket, destdir)
